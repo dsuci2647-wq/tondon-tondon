@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Changer - Money Changer & Penukaran Valas Resmi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#064e3b',
+                            100: '#065f46',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#022c22',
+                        },
+                        darkCard: '#0f172a',
+                        darkBg: '#020617',
+                        darkBorder: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        /* Kustomisasi kalender & jam bawaan browser agar ikonik dan ikon di dalamnya terlihat putih/jelas */
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            transform: scale(1.3);
+            margin-left: 8px;
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #receiptModalContent, #receiptModalContent * { visibility: visible; }
+            #receiptModalContent { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 flex flex-col min-h-screen selection:bg-emerald-500 selection:text-black">
+
+    <!-- OVERLAY LOADING ANIMASI -->
+    <div id="loadingOverlay" class="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md hidden flex flex-col items-center justify-center space-y-4">
+        <div class="w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+        <p id="loadingText" class="text-white font-bold text-lg tracking-wide animate-pulse">Memuat booking anda...</p>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-40 bg-darkBg/90 backdrop-blur-md border-b border-darkBorder shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center space-x-3">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 font-black">
+                        <i class="fa-solid fa-coins text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-extrabold tracking-tight text-white block leading-none">Money<span class="text-emerald-400">     Changer</span></span>
+                        <span class="text-[10px] font-semibold text-slate-400 tracking-wider uppercase">Premium Money Changer</span>
+                    </div>
+                </div>
+
+                <nav class="hidden md:flex items-center space-x-8 text-sm font-semibold">
+                    <a href="#home" class="text-emerald-400 transition">Beranda</a>
+                    <a href="#rates" class="text-slate-300 hover:text-emerald-400 transition">Kurs Real-Time</a>
+                    <a href="#calculator" class="text-slate-300 hover:text-emerald-400 transition">Kalkulator</a>
+                    <button onclick="showBookingSection()" class="text-slate-300 hover:text-emerald-400 transition text-left">Booking & Stok</button>
+                </nav>
+
+                <div class="flex items-center space-x-3">
+                    <button onclick="showBookingSection()" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-extrabold text-sm px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-check"></i> Booking Kurs
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- LIVE CLOCK BANNER (WIB / WITA / WIT OTOMATIS) -->
+    <div class="bg-slate-900 border-b border-darkBorder py-2 px-4 text-xs font-semibold text-emerald-400 shadow-inner">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-location-dot text-amber-400"></i>
+                <span>Waktu Real-Time Pengunjung:</span>
+            </div>
+            <div id="liveVisitorClock" class="font-mono font-bold tracking-wide text-white">
+                Memuat Waktu...
+            </div>
+        </div>
+    </div>
+
+    <!-- PENGUMUMAN PENTING DI BAGIAN HOME -->
+    <section class="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-3.5 shadow-lg border-b border-amber-500/30">
+        <div class="max-w-7xl mx-auto flex items-center justify-center gap-3 text-center sm:text-left text-sm font-semibold">
+            <span class="flex h-3 w-3 relative flex-shrink-0">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+            </span>
+            <p>
+                <strong class="font-black uppercase tracking-wide underline decoration-white/40">INFORMASI UTAMA PEMBELIAN VALAS:</strong> 
+                Jika mau beli uang asing, <span class="bg-slate-950 text-amber-300 px-2 py-0.5 rounded font-extrabold shadow-sm">wajib di-booking dulu</span> supaya stok uang fisik bisa kami keluarkan dan siapkan di brankas. Pengambilan langsung di tempat/kirim ke alamat!
+            </p>
+        </div>
+    </section>
+
+    <!-- Hero Section -->
+    <section id="home" class="relative bg-darkBg text-white py-16 lg:py-24 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,#10b98115,transparent_50%)]"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-12 gap-12 items-center">
+                
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-darkCard border border-darkBorder text-xs font-semibold text-emerald-400 backdrop-blur-md shadow-inner">
+                        <i class="fa-solid fa-arrows-rotate animate-spin"></i> Update Kurs Otomatis Real-Time
+                    </div>
+                    
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-none text-white">
+                        Penukaran Valas <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">Semua Mata Uang Dunia</span>
+                    </h1>
+                    
+                    <p class="text-slate-400 text-lg leading-relaxed max-w-2xl">
+                        Layanan penukaran uang resmi berizin Bank Indonesia. Booking kurs Anda secara online, lakukan transfer bank atau scan QRIS, lalu ambil fisik uang Anda dengan aman di outlet kami.
+                    </p>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4">
+                        <div class="bg-darkCard border border-darkBorder rounded-2xl p-4 shadow-xl">
+                            <i class="fa-solid fa-shield-halved text-emerald-400 text-xl mb-2"></i>
+                            <h4 class="font-bold text-sm text-white">Resmi & Aman</h4>
+                            <p class="text-xs text-slate-400 mt-1">Berizin Bank Indonesia</p>
+                        </div>
+                        <div class="bg-darkCard border border-darkBorder rounded-2xl p-4 shadow-xl">
+                            <i class="fa-solid fa-box-open text-emerald-400 text-xl mb-2"></i>
+                            <h4 class="font-bold text-sm text-white">Stok Disiapkan</h4>
+                            <p class="text-xs text-slate-400 mt-1">Pecahan bebas request</p>
+                        </div>
+                        <div class="bg-darkCard border border-darkBorder rounded-2xl p-4 col-span-2 sm:col-span-1 shadow-xl">
+                            <i class="fa-solid fa-receipt text-emerald-400 text-xl mb-2"></i>
+                            <h4 class="font-bold text-sm text-white">Kwitansi Resmi</h4>
+                            <p class="text-xs text-slate-400 mt-1">Dilengkapi waktu presisi</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Simulator Card -->
+                <div class="lg:col-span-5" id="calculator">
+                    <div class="bg-darkCard text-slate-100 rounded-3xl p-6 sm:p-8 shadow-2xl border border-darkBorder relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                        
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-extrabold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-calculator text-emerald-400"></i> Simulator Converter
+                            </h3>
+                            <span class="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                                <i class="fa-solid fa-clock"></i> Live Rate
+                            </span>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Jumlah Rupiah (IDR)</label>
+                                <div class="relative flex items-center">
+                                    <span class="absolute left-4 font-bold text-slate-500">Rp</span>
+                                    <input type="text" id="calcSourceAmount" value="15.000.000" oninput="formatRupiahInput(this)" class="w-full bg-slate-900 border border-darkBorder rounded-2xl py-3.5 pl-12 pr-4 font-extrabold text-lg text-white focus:outline-none focus:border-emerald-500 transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Pilih Mata Uang Asing</label>
+                                <div class="grid grid-cols-12 gap-2">
+                                    <div class="col-span-7">
+                                        <input type="text" id="calcTargetAmount" readonly class="w-full bg-slate-950 border border-darkBorder rounded-2xl py-3.5 px-4 font-extrabold text-lg text-emerald-400 cursor-not-allowed">
+                                    </div>
+                                    <div class="col-span-5">
+                                        <select id="calcTargetCurrency" class="w-full bg-slate-900 border border-darkBorder rounded-2xl py-3.5 px-3 font-bold text-white focus:outline-none focus:border-emerald-500">
+                                            <!-- Dynamically filled -->
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/80 border border-darkBorder rounded-2xl p-4 text-xs space-y-1">
+                                <div class="flex justify-between font-semibold text-slate-400">
+                                    <span>Kurs Jual Money Changer</span>
+                                    <span id="calcExchangeRateDisplay" class="font-bold text-white">1 USD = Rp 15,850</span>
+                                </div>
+                            </div>
+
+                            <button onclick="scrollToBooking()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black py-4 rounded-2xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 text-base">
+                                Lanjut Booking Kurs Ini <i class="fa-solid fa-arrow-right text-slate-950"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FORMULIR BOOKING -->
+    <section id="bookingSectionWrapper" class="py-16 bg-slate-950 border-y border-darkBorder hidden">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6">
+            <div class="bg-darkCard rounded-3xl shadow-2xl border border-darkBorder overflow-hidden">
+                <div class="bg-slate-900 px-8 py-6 text-white flex justify-between items-center border-b border-darkBorder">
+                    <div>
+                        <h2 class="text-2xl font-extrabold flex items-center gap-3 text-white">
+                            <i class="fa-solid fa-file-signature text-emerald-400"></i> Formulir Booking Penukaran Valas
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Isi data diri, alamat lengkap, jadwal, dan rincian uang untuk menyiapkan stok fisik.</p>
+                    </div>
+                    <button onclick="hideBookingSection()" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+                </div>
+
+                <form id="bookingForm" class="p-8 space-y-6" onsubmit="handleBookingSubmit(event)">
+                    
+                    <!-- 1. Data Diri Pemesan -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-extrabold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center justify-center text-xs">1</span> 
+                            Identitas Pemesan & Alamat Lengkap
+                        </h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Nama Lengkap <span class="text-red-400">*</span></label>
+                                <input type="text" id="custName" required placeholder="Contoh: Budi Santoso" class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">NIK (Nomor Induk Kependudukan) <span class="text-red-400">*</span></label>
+                                <input type="text" id="custNik" required maxlength="16" pattern="[0-9]{16}" placeholder="16 Digit NIK KTP" class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Nomor WhatsApp / HP <span class="text-red-400">*</span></label>
+                                <input type="tel" id="custPhone" required placeholder="081234567890" class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Email (Opsional)</label>
+                                <input type="email" id="custEmail" placeholder="budi@example.com" class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Alamat Lengkap (Sesuai KTP/Domisili) <span class="text-red-400">*</span></label>
+                                <textarea id="custAddress" required rows="2" placeholder="Nama Jalan, RT/RW, Kelurahan, Kecamatan, Kota/Kabupaten, Kode Pos" class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-darkBorder">
+
+                    <!-- 2. Jadwal & Metode Penerimaan (Dengan Teks & Icon Putih Diperbesar) -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-extrabold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center justify-center text-xs">2</span> 
+                            Jadwal & Metode Penerimaan Valas
+                        </h3>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-2">
+                                    <i class="fa-solid fa-calendar-days text-white text-base"></i> Pilih Tanggal Pengambilan <span class="text-red-400">*</span>
+                                </label>
+                                <input type="date" id="pickupDate" required class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Hari <span class="text-red-400">*</span></label>
+                                <select id="pickupDay" required class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                    <option value="Senin">Senin</option>
+                                    <option value="Selasa">Selasa</option>
+                                    <option value="Rabu">Rabu</option>
+                                    <option value="Kamis">Kamis</option>
+                                    <option value="Jumat">Jumat</option>
+                                    <option value="Sabtu">Sabtu</option>
+                                    <option value="Minggu">Minggu</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-2">
+                                    <i class="fa-solid fa-clock text-white text-base"></i> Pilih Waktu/Jam <span class="text-red-400">*</span>
+                                </label>
+                                <input type="time" id="pickupTime" required class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Metode Penerimaan <span class="text-red-400">*</span></label>
+                                <select id="deliveryMethod" required class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                    <option value="Ambil di Tempat">Ambil di Tempat</option>
+                                    <option value="Kirim ke Alamat">Kirim ke Alamat (Kurir Berasuransi)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-darkBorder">
+
+                    <!-- 3. Rincian Pemesanan Uang Asing -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-extrabold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center justify-center text-xs">3</span> 
+                            Rincian Mata Uang, Jumlah & Pecahan
+                        </h3>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Mata Uang <span class="text-red-400">*</span></label>
+                                <select id="formCurrency" onchange="updateCurrencyCodeLabel()" class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                    <!-- Dynamic Options -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Jumlah Mata Uang Asing <span class="text-red-400">*</span></label>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="formForeignAmount" min="1" required placeholder="Contoh: 1000" class="w-full bg-slate-900 border border-darkBorder rounded-xl py-3 pl-4 pr-16 text-sm font-bold text-emerald-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                    <span id="currencyCodeBadge" class="absolute right-3 font-extrabold text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded-md">USD</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Pecahan Mata Uang Asing <span class="text-red-400">*</span></label>
+                                <input type="text" id="formDenomination" required placeholder="Ketik manual (mis: Lembar 100 & 50)" class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Total Calculation Box -->
+                        <div class="bg-slate-900 border border-darkBorder text-white rounded-2xl p-5 space-y-3">
+                            <div class="flex justify-between items-center text-xs text-slate-400">
+                                <span>Kurs Kunci (Rate Jual Money Changer)</span>
+                                <span id="formRateLocked" class="font-mono font-bold text-emerald-400">1 USD = Rp 15,850</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t border-darkBorder pt-3">
+                                <div>
+                                    <span class="text-xs text-slate-400 block font-bold">Total Rupiah yang Harus Ditransfer</span>
+                                    <span class="text-[11px] text-amber-400">Stok uang akan disiapkan setelah transfer dikonfirmasi</span>
+                                </div>
+                                <span id="formTotalRupiah" class="text-lg font-extrabold text-emerald-400">Rp 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Booking Sekarang -->
+                    <div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-base">
+                            <i class="fa-solid fa-circle-check"></i> Booking Sekarang
+                        </button>
+                        <!-- Informasi Keamanan Data -->
+                        <div class="flex items-center justify-center gap-2 mt-3 text-xs text-slate-400">
+                            <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                            <span>Data Anda dienkripsi dan dijamin kerahasiaannya</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Table Rate Real-Time All Countries -->
+    <section id="rates" class="py-16 bg-darkBg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+                <div>
+                    <span class="text-xs font-extrabold text-emerald-400 uppercase tracking-widest">Rate Paling Kompetitif</span>
+                    <h2 class="text-3xl font-extrabold text-white mt-1">Daftar Kurs Valuta Asing Semua Negara</h2>
+                    <p class="text-slate-400 text-sm mt-1">Harga otomatis diperbarui sesuai pergerakan pasar valas global.</p>
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="relative w-full md:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="searchCurrency" placeholder="Cari Mata Uang / Negara..." class="w-full bg-darkCard border border-darkBorder rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-darkCard border border-darkBorder rounded-2xl overflow-hidden shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 text-slate-300 text-xs uppercase font-extrabold tracking-wider border-b border-darkBorder">
+                                <th class="py-4 px-6">Mata Uang</th>
+                                <th class="py-4 px-6">Kode</th>
+                                <th class="py-4 px-6 text-right">Kami Beli (Rupiah)</th>
+                                <th class="py-4 px-6 text-right">Kami Jual (Rupiah)</th>
+                                <th class="py-4 px-6 text-center">Status Stok</th>
+                                <th class="py-4 px-6 text-center">Aksi Booking</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rateTableBody" class="divide-y divide-darkBorder text-sm font-semibold text-slate-300">
+                            <!-- Populated via Javascript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BAGIAN FAQ (PERTANYAAN SERING DIAJUKAN) -->
+    <section class="py-12 bg-slate-950 border-t border-darkBorder">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+            <div class="text-center space-y-2">
+                <h2 class="text-3xl font-extrabold text-white tracking-tight">Pertanyaan Sering Diajukan <span class="text-emerald-400">(FAQ)</span></h2>
+                <p class="text-xs text-slate-400">Temukan informasi seputar penguncian kurs dan persyaratan pengambilan valas.</p>
+            </div>
+
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <div class="bg-darkCard border border-darkBorder rounded-2xl p-6 shadow-xl space-y-2">
+                    <h4 class="font-bold text-base text-white flex items-center gap-3">
+                        <span class="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 text-sm">
+                            <i class="fa-solid fa-question"></i>
+                        </span>
+                        Bagaimana cara mengunci kurs penukaran?
+                    </h4>
+                    <p class="text-sm text-slate-300 pl-10 leading-relaxed">
+                        Anda cukup melakukan pemesanan (booking) melalui kalkulator di atas, memilih metode transfer bank, dan menyelesaikan pembayaran dalam batas waktu 10 menit. Nilai kurs akan otomatis terkunci sesuai invoice.
+                    </p>
+                </div>
+
+                <!-- FAQ Item 2 -->
+                <div class="bg-darkCard border border-darkBorder rounded-2xl p-6 shadow-xl space-y-2">
+                    <h4 class="font-bold text-base text-white flex items-center gap-3">
+                        <span class="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 text-sm">
+                            <i class="fa-solid fa-question"></i>
+                        </span>
+                        Persyaratan apa yang dibutuhkan untuk pengambilan fisik valas?
+                    </h4>
+                    <p class="text-sm text-slate-300 pl-10 leading-relaxed">
+                        Sesuai regulasi Bank Indonesia, Anda wajib membawa identitas asli KTP/Paspor yang sesuai dengan nama pada invoice pemesanan saat melakukan pengambilan di outlet fisik kami.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL 1: DETAIL PEMBAYARAN -->
+    <div id="paymentModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-darkCard border border-darkBorder w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-8">
+            <div class="bg-slate-900 px-6 py-5 text-white flex justify-between items-center border-b border-darkBorder">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-lg text-white">Metode Pembayaran & Lampiran Bukti</h3>
+                        <p class="text-xs text-slate-400">Pilih metode transfer bank atau QRIS untuk melunasi transaksi.</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('paymentModal')" class="text-slate-400 hover:text-white text-xl">&times;</button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- Nominal Alert & Countdown Timer 10 Menit -->
+                <div class="bg-emerald-950/60 border border-emerald-800/60 rounded-2xl p-4 flex justify-between items-center">
+                    <div>
+                        <span class="text-xs text-emerald-400 font-bold block">Total Transfer Rupiah:</span>
+                        <span id="paymentTotalAmount" class="text-2xl font-black text-emerald-300">Rp 0</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[11px] text-slate-400 block">Batas Waktu Validasi</span>
+                        <span id="countdownTimer" class="font-mono font-bold text-red-400 text-base">10:00</span>
+                    </div>
+                </div>
+
+                <!-- TAB NAVIGASI PEMISAH MENU TRANSFER BANK DAN QRIS -->
+                <div class="flex border-b border-darkBorder space-x-4">
+                    <button type="button" onclick="switchPaymentTab('bank')" id="tabBankBtn" class="pb-3 text-sm font-extrabold text-emerald-400 border-b-2 border-emerald-400 focus:outline-none flex items-center gap-2">
+                        <i class="fa-solid fa-building-columns"></i> Transfer Bank
+                    </button>
+                    <button type="button" onclick="switchPaymentTab('qris')" id="tabQrisBtn" class="pb-3 text-sm font-extrabold text-slate-400 border-b-2 border-transparent hover:text-white focus:outline-none flex items-center gap-2">
+                        <i class="fa-solid fa-qrcode"></i> Menu QRIS
+                    </button>
+                </div>
+
+                <!-- KONTEN TAB 1: TRANSFER BANK -->
+                <div id="tabBankContent" class="space-y-4">
+                    <h4 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Pilih Rekening Resmi Transfer:</h4>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-2">Pilih Bank Tujuan Transfer</label>
+                        <select id="bankDropdownSelect" onchange="updateBankDropdownDetail()" class="w-full bg-slate-900 border border-darkBorder rounded-xl px-4 py-3 text-sm font-bold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="bca">Bank BCA (Sedang Gangguan)</option>
+                            <option value="mandiri">Bank Mandiri (Sedang Gangguan)</option>
+                            <option value="bni">Bank BNI (Sedang Gangguan)</option>
+                            <option value="bri">Bank BRI (Sedang Gangguan)</option>
+                            <option value="cimb" selected>CIMB Niaga - a.n Money Changer (Yolanda Azahra)</option>
+                        </select>
+                    </div>
+
+                    <div id="bankDetailCard" class="border border-emerald-800/80 rounded-2xl p-4 bg-slate-900 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span id="dropdownBankName" class="font-black text-teal-400 text-sm"><i class="fa-solid fa-landmark mr-1"></i> CIMB Niaga</span>
+                            <span id="dropdownBankStatus" class="text-[10px] bg-emerald-950 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-800">Tersedia</span>
+                        </div>
+                        <div class="text-xs text-slate-400">No. Rekening:</div>
+                        <div class="flex justify-between items-center font-mono font-extrabold text-white text-sm">
+                            <span id="dropdownBankNumber">7080-4397-6400</span>
+                            <button id="dropdownCopyBtn" onclick="copyToClipboard('708043976400')" class="text-[11px] text-emerald-400 bg-slate-800 border border-darkBorder px-2 py-0.5 rounded">Copy</button>
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">a.n Money Changer (Yolanda Azahra)</div>
+                    </div>
+                </div>
+
+                <!-- KONTEN TAB 2: MENU QRIS -->
+                <div id="tabQrisContent" class="space-y-4 hidden">
+                    <div class="bg-slate-900 border border-darkBorder rounded-2xl p-5 text-center space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-emerald-400 text-sm"><i class="fa-solid fa-qrcode mr-1"></i> QRIS Pembayaran Resmi</span>
+                            <span class="text-[10px] bg-emerald-950 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-800">Scan & Pay</span>
+                        </div>
+                        <div class="bg-amber-950/60 border border-amber-800/80 p-3 rounded-xl text-amber-300 text-xs font-bold leading-relaxed">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
+                            Maksimal pembayaran via QRIS Rp. 10.000.000. Jika lebih dari nominal ini silakan gunakan pembayaran transfer Bank.
+                        </div>
+                        <p class="text-xs text-slate-300">
+                            Scan menggunakan BCA Mobile, GoPay, OVO, DANA, ShopeePay, atau m-Banking lain yang mendukung QRIS.
+                        </p>
+                        <div class="bg-white p-3 rounded-2xl inline-block shadow-lg">
+                            <img src="qrismoneychanger.jpg" alt="QRIS Pembayaran Money Changer" class="w-64 h-auto mx-auto rounded-lg">
+                        </div>
+                        <div class="text-xs text-slate-400 font-semibold">
+                            a.n Money Changer
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WAJIB LAMPIRKAN BUKTI TRANSFER ASLI -->
+                <div class="border-2 border-dashed border-red-800/80 bg-red-950/20 rounded-2xl p-5 space-y-3">
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-triangle-exclamation text-red-400 text-xl mt-0.5"></i>
+                        <div>
+                            <h4 class="font-extrabold text-red-300 text-sm">Wajib Melampirkan Bukti Transfer / Pembayaran Asli</h4>
+                            <p class="text-xs text-red-200/80 mt-0.5">Unggah foto/tangkapan layar struk atau resi bukti transfer/QRIS asli dari aplikasi Anda agar staf dapat memvalidasi dan mencetak kwitansi.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <input type="file" id="transferProofFile" accept="image/*,.pdf" required class="block w-full text-xs text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Button Konfirmasi Pembayaran -->
+                <button onclick="confirmPaymentAndGenerateReceipt()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-extrabold py-2.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-1.5 text-xs">
+                    <i class="fa-solid fa-receipt text-[11px]"></i> Konfirmasi Pembayaran & Terbitkan Kwitansi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: KWITANSI DIGITAL -->
+    <div id="receiptModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-darkCard border border-darkBorder w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden my-8 text-slate-100">
+            
+            <div id="receiptModalContent" class="p-8 space-y-6">
+                <!-- Receipt Header -->
+                <div class="border-b-2 border-dashed border-darkBorder pb-6 text-center space-y-2">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold mb-1">
+                        <i class="fa-solid fa-check text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-black text-white tracking-tight">KWITANSI BUKTI BOOKING VALAS</h2>
+                    <p class="text-xs font-extrabold text-emerald-400 uppercase tracking-widest">MONEY CHANGER</p>
+                    <p class="text-[11px] text-slate-400">Izin Resmi Terverifikasi | Sudirman Central Tower, Jakarta</p>
+                </div>
+
+                <!-- Transaction Meta (Kode, Queue Number, Hari, Tanggal, Waktu) -->
+                <div class="bg-slate-900 border border-darkBorder rounded-2xl p-4 text-xs space-y-2 font-mono">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Nomor Antrian:</span>
+                        <span id="receiptQueueNumber" class="font-bold text-amber-400">A-001</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">No. Transaksi / Booking:</span>
+                        <span id="receiptCode" class="font-bold text-white">GX-20261016-8821</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Hari, Tanggal & Waktu Transaksi:</span>
+                        <span id="receiptDateTime" class="font-bold text-white">Jumat, 16 Okt 2026 - 14:30:12 WIB</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Jadwal Pengambilan:</span>
+                        <span id="receiptSchedule" class="font-bold text-emerald-400">Senin, 19 Okt 2026 - 10:00 WIB</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Metode Penerimaan:</span>
+                        <span id="receiptDelivery" class="font-bold text-amber-400">Ambil di Tempat</span>
+                    </div>
+                </div>
+
+                <!-- Customer Details -->
+                <div class="space-y-1 text-xs">
+                    <h4 class="font-extrabold text-slate-400 uppercase tracking-wider text-[10px]">Data Pemesan & Alamat:</h4>
+                    <div class="flex justify-between py-1 border-b border-darkBorder">
+                        <span class="text-slate-400">Nama Lengkap:</span>
+                        <span id="receiptCustName" class="font-bold text-white">Budi Santoso</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-darkBorder">
+                        <span class="text-slate-400">NIK (KTP):</span>
+                        <span id="receiptCustNik" class="font-bold text-white">3171029384750001</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-darkBorder">
+                        <span class="text-slate-400">No. WhatsApp:</span>
+                        <span id="receiptCustPhone" class="font-bold text-white">081234567890</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-darkBorder">
+                        <span class="text-slate-400">Alamat Lengkap:</span>
+                        <span id="receiptCustAddress" class="font-bold text-white text-right max-w-[250px]">Jl. Sudirman No. 12, Jakarta</span>
+                    </div>
+                </div>
+
+                <!-- Currency & Denomination Details -->
+                <div class="space-y-1 text-xs">
+                    <h4 class="font-extrabold text-slate-400 uppercase tracking-wider text-[10px]">Rincian Mata Uang & Pecahan:</h4>
+                    <div class="flex justify-between py-1 border-b border-darkBorder">
+                        <span class="text-slate-400">Mata Uang Dipesan:</span>
+                        <span id="receiptCurrency" class="font-bold text-white">USD - US Dollar</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-darkBorder">
+                        <span class="text-slate-400">Jumlah Mata Uang Asing:</span>
+                        <span id="receiptForeignAmount" class="font-extrabold text-emerald-400">$ 1,000.00</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-darkBorder">
+                        <span class="text-slate-400">Pecahan Uang:</span>
+                        <span id="receiptDenomination" class="font-bold text-white">Lembar Besar ($100 Mulus)</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-darkBorder">
+                        <span class="text-slate-400">Kurs Kunci:</span>
+                        <span id="receiptLockedRate" class="font-bold text-white">1 USD = Rp 15,850</span>
+                    </div>
+                </div>
+
+                <!-- Total Payment -->
+                <div class="bg-slate-900 border border-darkBorder text-white p-4 rounded-2xl flex justify-between items-center">
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase block font-bold">Total Pembayaran Lunas</span>
+                        <span id="receiptTotalRupiah" class="text-xl font-black text-emerald-400">Rp 15,850,000</span>
+                    </div>
+                    <div class="text-right text-[10px] text-slate-300">
+                        <span>Bukti Pembayaran:</span>
+                        <span class="block text-emerald-400 font-bold"><i class="fa-solid fa-paperclip"></i> Terlampir Asli</span>
+                    </div>
+                </div>
+
+                <!-- Outlet Location Reminder -->
+                <div class="bg-amber-950/40 border border-amber-800/60 rounded-xl p-3 text-[11px] text-amber-200 leading-snug">
+                    <i class="fa-solid fa-location-dot text-amber-400 mr-1"></i>
+                    <strong>Ketentuan Pengambilan/Pengiriman:</strong> Stok uang fisik Anda sudah disiapkan. Harap bawa Kwitansi digital/cetak ini beserta KTP asli saat pengambilan.
+                </div>
+            </div>
+
+            <!-- Modal Action Buttons (No Print) -->
+            <div class="bg-slate-900 px-8 py-4 flex gap-3 no-print border-t border-darkBorder">
+                <button onclick="window.print()" class="flex-1 bg-slate-800 border border-darkBorder hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition text-xs flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak Kwitansi
+                </button>
+                <button onclick="closeModal('receiptModal')" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-extrabold py-3 rounded-xl transition text-xs flex items-center justify-center gap-2">
+                    Selesai
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 text-slate-400 text-xs py-12 mt-auto border-t border-darkBorder">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4 text-center">
+            <div class="flex items-center justify-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500 text-slate-950 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <span class="text-base font-extrabold text-white">Money Changer</span>
+            </div>
+            <p>&copy; 2026 Money Changer. All rights reserved. Kurs dapat berubah sewaktu-waktu sesuai pergerakan pasar valuta asing internasional.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const currencies = [
+            { code: 'USD', name: 'US Dollar', flag: '🇺🇸', buy: 15750, sell: 15850 },
+            { code: 'SGD', name: 'Singapore Dollar', flag: '🇸🇬', buy: 11800, sell: 11920 },
+            { code: 'EUR', name: 'Euro', flag: '🇪🇺', buy: 17100, sell: 17280 },
+            { code: 'JPY', name: 'Japanese Yen (100)', flag: '🇯🇵', buy: 10450, sell: 10600 },
+            { code: 'AUD', name: 'Australian Dollar', flag: '🇦🇺', buy: 10300, sell: 10450 },
+            { code: 'GBP', name: 'British Pound', flag: '🇬🇧', buy: 20100, sell: 20350 },
+            { code: 'MYR', name: 'Malaysian Ringgit', flag: '🇲🇾', buy: 3550, sell: 3620 },
+            { code: 'THB', name: 'Thai Baht', flag: '🇹🇭', buy: 440, sell: 455 },
+            { code: 'SAR', name: 'Saudi Riyal', flag: '🇸🇦', buy: 4200, sell: 4280 },
+            { code: 'CNY', name: 'Chinese Yuan', flag: '🇨🇳', buy: 2200, sell: 2250 },
+            { code: 'KRW', name: 'South Korean Won', flag: '🇰🇷', buy: 11.5, sell: 12.2 },
+            { code: 'HKD', name: 'Hong Kong Dollar', flag: '🇭🇰', buy: 2010, sell: 2050 },
+            { code: 'CHF', name: 'Swiss Franc', flag: '🇨🇭', buy: 18100, sell: 18350 },
+            { code: 'CAD', name: 'Canadian Dollar', flag: '🇨🇦', buy: 11500, sell: 11680 },
+            { code: 'NZD', name: 'New Zealand Dollar', flag: '🇳🇿', buy: 9400, sell: 9580 },
+            { code: 'AED', name: 'UAE Dirham', flag: '🇦🇪', buy: 4280, sell: 4350 },
+            { code: 'INR', name: 'Indian Rupee', flag: '🇮🇳', buy: 185, sell: 195 },
+            { code: 'TWD', name: 'New Taiwan Dollar', flag: '🇹🇼', buy: 490, sell: 510 },
+            { code: 'PHP', name: 'Philippine Peso', flag: '🇵🇭', buy: 270, sell: 285 },
+            { code: 'VND', name: 'Vietnamese Dong (1000)', flag: '🇻🇳', buy: 610, sell: 635 }
+        ];
+
+        let currentBookingData = {};
+        let countdownInterval = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateCurrencySelects();
+            renderRateTable();
+            setupEventListeners();
+            updateCalculations();
+            updateCurrencyCodeLabel();
+            startLiveVisitorClock();
+            updateBankDropdownDetail();
+            
+            // Set default date to today for convenience
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('pickupDate');
+            if(dateInput) dateInput.value = today;
+        });
+
+        // FUNGSI ANIMASI LOADING (2000 ms / 2 Detik)
+        function triggerLoading(text, callback) {
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            loadingText.textContent = text;
+            overlay.classList.remove('hidden');
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            }, 2000);
+        }
+
+        // Live Clock WIB / WITA / WIT otomatis berdasarkan offset waktu browser pengunjung
+        function startLiveVisitorClock() {
+            function updateClock() {
+                const now = new Date();
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agust', 'Sep', 'Okt', 'Nov', 'Des'];
+                
+                const dayName = days[now.getDay()];
+                const dateNum = now.getDate();
+                const monthName = months[now.getMonth()];
+                const year = now.getFullYear();
+
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+
+                const offsetMinutes = now.getTimezoneOffset();
+                let tzString = 'WIB';
+                if (offsetMinutes === -480) tzString = 'WITA';
+                else if (offsetMinutes === -540) tzString = 'WIT';
+                else if (offsetMinutes === -420) tzString = 'WIB';
+                else {
+                    tzString = 'WIB';
+                }
+
+                const timeString = `${dayName}, ${dateNum} ${monthName} ${year} — ${hours}:${minutes}:${seconds} ${tzString}`;
+                document.getElementById('liveVisitorClock').textContent = timeString;
+            }
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        // Fungsi Switch Tab Pembayaran (Transfer Bank vs QRIS)
+        function switchPaymentTab(tab) {
+            const btnBank = document.getElementById('tabBankBtn');
+            const btnQris = document.getElementById('tabQrisBtn');
+            const contentBank = document.getElementById('tabBankContent');
+            const contentQris = document.getElementById('tabQrisContent');
+
+            if (tab === 'bank') {
+                btnBank.className = "pb-3 text-sm font-extrabold text-emerald-400 border-b-2 border-emerald-400 focus:outline-none flex items-center gap-2";
+                btnQris.className = "pb-3 text-sm font-extrabold text-slate-400 border-b-2 border-transparent hover:text-white focus:outline-none flex items-center gap-2";
+                contentBank.classList.remove('hidden');
+                contentQris.classList.add('hidden');
+            } else {
+                btnQris.className = "pb-3 text-sm font-extrabold text-emerald-400 border-b-2 border-emerald-400 focus:outline-none flex items-center gap-2";
+                btnBank.className = "pb-3 text-sm font-extrabold text-slate-400 border-b-2 border-transparent hover:text-white focus:outline-none flex items-center gap-2";
+                contentQris.classList.remove('hidden');
+                contentBank.classList.add('hidden');
+            }
+        }
+
+        // Update detail card saat pilihan dropdown bank diubah
+        function updateBankDropdownDetail() {
+            const select = document.getElementById('bankDropdownSelect').value;
+            const nameEl = document.getElementById('dropdownBankName');
+            const statusEl = document.getElementById('dropdownBankStatus');
+            const numberEl = document.getElementById('dropdownBankNumber');
+            const copyBtn = document.getElementById('dropdownCopyBtn');
+            const cardEl = document.getElementById('bankDetailCard');
+
+            if (select === 'cimb') {
+                nameEl.innerHTML = '<i class="fa-solid fa-landmark mr-1"></i> CIMB Niaga';
+                statusEl.textContent = 'Tersedia';
+                statusEl.className = 'text-[10px] bg-emerald-950 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-800';
+                numberEl.textContent = '7080-4397-6400';
+                numberEl.className = 'flex justify-between items-center font-mono font-extrabold text-white text-sm';
+                copyBtn.style.display = 'block';
+                copyBtn.setAttribute('onclick', "copyToClipboard('708043976400')");
+                cardEl.className = 'border border-emerald-800/80 rounded-2xl p-4 bg-slate-900 space-y-2';
+            } else {
+                let bankNames = { bca: 'Bank BCA', mandiri: 'Bank Mandiri', bni: 'Bank BNI', bri: 'Bank BRI' };
+                nameEl.innerHTML = `<i class="fa-solid fa-landmark mr-1"></i> ${bankNames[select]}`;
+                statusEl.textContent = 'Sedang Gangguan';
+                statusEl.className = 'text-[10px] bg-red-950 text-red-300 font-bold px-2 py-0.5 rounded border border-red-800';
+                numberEl.textContent = 'Sedang Gangguan';
+                numberEl.className = 'font-bold text-red-400 text-sm italic mt-1';
+                copyBtn.style.display = 'none';
+                cardEl.className = 'border border-darkBorder rounded-2xl p-4 bg-slate-900 opacity-75 space-y-2';
+            }
+        }
+
+        function populateCurrencySelects() {
+            const calcSelect = document.getElementById('calcTargetCurrency');
+            const formSelect = document.getElementById('formCurrency');
+
+            currencies.forEach(c => {
+                const opt1 = document.createElement('option');
+                opt1.value = c.code;
+                opt1.textContent = `${c.flag} ${c.code} - ${c.name}`;
+                calcSelect.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = c.code;
+                opt2.textContent = `${c.flag} ${c.code} - ${c.name}`;
+                formSelect.appendChild(opt2);
+            });
+        }
+
+        function renderRateTable(filter = '') {
+            const tbody = document.getElementById('rateTableBody');
+            tbody.innerHTML = '';
+
+            const filtered = currencies.filter(c => 
+                c.code.toLowerCase().includes(filter.toLowerCase()) || 
+                c.name.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            filtered.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-900/50 transition border-b border-darkBorder';
+                tr.innerHTML = `
+                    <td class="py-4 px-6 flex items-center gap-3">
+                        <span class="text-2xl">${c.flag}</span>
+                        <div>
+                            <div class="font-bold text-white">${c.name}</div>
+                            <div class="text-xs text-slate-400">Pecahan Lengkap</div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 font-mono font-bold text-slate-200">${c.code}</td>
+                    <td class="py-4 px-6 text-right font-mono font-bold text-slate-300">Rp ${c.buy.toLocaleString('id-ID')}</td>
+                    <td class="py-4 px-6 text-right font-mono font-bold text-emerald-400">Rp ${c.sell.toLocaleString('id-ID')}</td>
+                    <td class="py-4 px-6 text-center">
+                        <span class="inline-flex items-center gap-1 bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold px-2.5 py-1 rounTotal Rupiah yang Harus Ditransferded-full">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Siap Dipesan
+                        </span>
+                    </td>
+                    <td class="py-4 px-6 text-center">
+                        <button onclick="selectRateForBooking('${c.code}')" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 text-xs font-black px-3.5 py-2 rounded-xl transition shadow-md">
+                            Booking Kurs
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('calcSourceAmount').addEventListener('input', updateCalculations);
+            document.getElementById('calcTargetCurrency').addEventListener('change', updateCalculations);
+            
+            document.getElementById('formForeignAmount').addEventListener('input', updateFormTotal);
+            document.getElementById('formCurrency').addEventListener('change', updateFormTotal);
+
+            document.getElementById('searchCurrency').addEventListener('input', (e) => {
+                renderRateTable(e.target.value);
+            });
+        }
+
+        // Format angka Rupiah interaktif saat diketik
+        function formatRupiahInput(input) {
+            let val = input.value.replace(/[^,\d]/g, '');
+            let split = val.split(',');
+            let sisa = split[0].length % 3;
+            let rupiah = split[0].substr(0, sisa);
+            let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+            if (ribuan) {
+                let separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+
+            rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
+            input.value = rupiah;
+            updateCalculations();
+        }
+
+        function updateCalculations() {
+            const rawVal = document.getElementById('calcSourceAmount').value.replace(/\./g, '').replace(/,/g, '.');
+            const amount = parseFloat(rawVal) || 0;
+            const code = document.getElementById('calcTargetCurrency').value;
+            const curr = currencies.find(c => c.code === code);
+
+            if (curr) {
+                const converted = (amount / curr.sell).toFixed(2);
+                document.getElementById('calcTargetAmount').value = converted;
+                document.getElementById('calcExchangeRateDisplay').textContent = `1 ${curr.code} = Rp ${curr.sell.toLocaleString('id-ID')}`;
+            }
+        }
+
+        function updateCurrencyCodeLabel() {
+            const code = document.getElementById('formCurrency').value;
+            document.getElementById('currencyCodeBadge').textContent = code;
+            updateFormTotal();
+        }
+
+        function updateFormTotal() {
+            const code = document.getElementById('formCurrency').value;
+            const amount = parseFloat(document.getElementById('formForeignAmount').value) || 0;
+            const curr = currencies.find(c => c.code === code);
+
+            if (curr) {
+                const totalRupiah = amount * curr.sell;
+                document.getElementById('formRateLocked').textContent = `1 ${curr.code} = Rp ${curr.sell.toLocaleString('id-ID')}`;
+                document.getElementById('formTotalRupiah').textContent = `Rp ${totalRupiah.toLocaleString('id-ID')}`;
+            }
+        }
+
+        function showBookingSection() {
+            const section = document.getElementById('bookingSectionWrapper');
+            section.classList.remove('hidden');
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideBookingSection() {
+            document.getElementById('bookingSectionWrapper').classList.add('hidden');
+        }
+
+        // PERMINTAAN 1: Tombol Lanjut Booking Kurs Ini -> Loading 2000 ms
+        function scrollToBooking() {
+            triggerLoading("Memuat booking anda...", () => {
+                const code = document.getElementById('calcTargetCurrency').value;
+                const foreignAmt = document.getElementById('calcTargetAmount').value;
+
+                document.getElementById('formCurrency').value = code;
+                document.getElementById('formForeignAmount').value = Math.ceil(foreignAmt);
+                updateCurrencyCodeLabel();
+                updateFormTotal();
+
+                showBookingSection();
+            });
+        }
+
+        function selectRateForBooking(code) {
+            triggerLoading("Memuat booking anda...", () => {
+                document.getElementById('formCurrency').value = code;
+                document.getElementById('formForeignAmount').value = 1000;
+                updateCurrencyCodeLabel();
+                updateFormTotal();
+                
+                showBookingSection();
+            });
+        }
+
+        // PERMINTAAN 2: Tombol Booking Sekarang -> Loading 2000 ms dengan "Konfirmasi pembayaran..."
+        function handleBookingSubmit(e) {
+            e.preventDefault();
+
+            triggerLoading("Konfirmasi pembayaran...", () => {
+                const name = document.getElementById('custName').value;
+                const nik = document.getElementById('custNik').value;
+                const phone = document.getElementById('custPhone').value;
+                const address = document.getElementById('custAddress').value;
+                
+                const pickupDate = document.getElementById('pickupDate').value;
+                const pickupDay = document.getElementById('pickupDay').value;
+                const pickupTime = document.getElementById('pickupTime').value;
+                const deliveryMethod = document.getElementById('deliveryMethod').value;
+
+                const currencyCode = document.getElementById('formCurrency').value;
+                const foreignAmount = parseFloat(document.getElementById('formForeignAmount').value);
+                const denomination = document.getElementById('formDenomination').value;
+
+                const curr = currencies.find(c => c.code === currencyCode);
+                const totalRupiah = foreignAmount * curr.sell;
+
+                // PERMINTAAN 3: Generate Nomor Antrian Otomatis & Acak (misal: A-042)
+                const queueNum = 'A-' + String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+
+                currentBookingData = {
+                    name,
+                    nik,
+                    phone,
+                    address,
+                    pickupDate,
+                    pickupDay,
+                    pickupTime,
+                    deliveryMethod,
+                    currencyCode,
+                    currencyName: curr.name,
+                    foreignAmount,
+                    denomination,
+                    rate: curr.sell,
+                    totalRupiah,
+                    queueNumber: queueNum,
+                    bookingCode: 'GX-' + new Date().getFullYear() + String(Math.floor(100000 + Math.random() * 900000))
+                };
+
+                document.getElementById('paymentTotalAmount').textContent = `Rp ${totalRupiah.toLocaleString('id-ID')}`;
+                
+                document.getElementById('paymentModal').classList.remove('hidden');
+                startCountdownTimer(10 * 60);
+            });
+        }
+
+        function startCountdownTimer(durationInSeconds) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            let timer = durationInSeconds;
+            
+            const display = document.getElementById('countdownTimer');
+            countdownInterval = setInterval(() => {
+                let minutes = Math.floor(timer / 60);
+                let seconds = timer % 60;
+
+                minutes = minutes < 10 ? '0' + minutes : minutes;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+
+                display.textContent = minutes + ':' + seconds;
+
+                if (--timer < 0) {
+                    clearInterval(countdownInterval);
+                    display.textContent = '00:00';
+                    alert('Waktu validasi pembayaran Anda (10 menit) telah habis. Pembayaran otomatis dibatalkan.');
+                    closeModal('paymentModal');
+                }
+            }, 1000);
+        }
+
+        // Fungsi Integrasi Kirim Pesan ke Telegram Bot
+        function sendBookingToTelegram() {
+            const token = '7084858941:AAGVudSvx2aovaVo70aajVjHJUqgytBoUgA';
+            const chatId = '6834945462';
+            
+            if (token === 'YOUR_BOT_TOKEN' || chatId === 'YOUR_CHAT_ID') {
+                console.warn('Token atau Chat ID Telegram belum dikonfigurasi.');
+                return;
+            }
+
+            const message = `🔔 *BOOKING VALAS BARU MASUK!* 🔔\n\n` +
+                `🎫 *No. Antrian:* ${currentBookingData.queueNumber}\n` +
+                `🔖 *No. Booking:* ${currentBookingData.bookingCode}\n` +
+                `👤 *Nama:* ${currentBookingData.name}\n` +
+                `🪪 *NIK:* ${currentBookingData.nik}\n` +
+                `📱 *No. WhatsApp:* ${currentBookingData.phone}\n` +
+                `🏠 *Alamat:* ${currentBookingData.address}\n\n` +
+                `📅 *Jadwal:* ${currentBookingData.pickupDay}, ${currentBookingData.pickupDate} - ${currentBookingData.pickupTime} WIB\n` +
+                `🚚 *Metode:* ${currentBookingData.deliveryMethod}\n\n` +
+                `💱 *Pesanan:* ${currentBookingData.foreignAmount.toLocaleString('id-ID')} ${currentBookingData.currencyCode} (${currentBookingData.currencyName})\n` +
+                `💵 *Pecahan:* ${currentBookingData.denomination}\n` +
+                `💰 *Total Transfer:* Rp ${currentBookingData.totalRupiah.toLocaleString('id-ID')}`;
+
+            const url = `https://api.telegram.org/bot${token}/sendMessage`;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: 'Markdown'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.ok) {
+                    console.log('Notifikasi Telegram berhasil dikirim.');
+                } else {
+                    console.error('Gagal mengirim ke Telegram:', data.description);
+                }
+            })
+            .catch(error => {
+                console.error('Error koneksi Telegram:', error);
+            });
+        }
+
+        function confirmPaymentAndGenerateReceipt() {
+            const proofInput = document.getElementById('transferProofFile');
+            if (!proofInput.files || proofInput.files.length === 0) {
+                alert('Wajib melampirkan file/foto bukti pembayaran asli sebelum menerbitkan kwitansi!');
+                return;
+            }
+
+            if (countdownInterval) clearInterval(countdownInterval);
+            document.getElementById('paymentModal').classList.add('hidden');
+
+            // Kirim data booking ke Telegram saat konfirmasi pembayaran berhasil
+            sendBookingToTelegram();
+
+            const now = new Date();
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agust', 'Sep', 'Okt', 'Nov', 'Des'];
+            
+            const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} WIB`;
+
+            // Display Kwitansi Data
+            document.getElementById('receiptQueueNumber').textContent = currentBookingData.queueNumber;
+            document.getElementById('receiptCode').textContent = currentBookingData.bookingCode;
+            document.getElementById('receiptDateTime').textContent = dateStr;
+            document.getElementById('receiptSchedule').textContent = `${currentBookingData.pickupDay}, ${currentBookingData.pickupDate} - ${currentBookingData.pickupTime} WIB`;
+            document.getElementById('receiptDelivery').textContent = currentBookingData.deliveryMethod;
+
+            document.getElementById('receiptCustName').textContent = currentBookingData.name;
+            document.getElementById('receiptCustNik').textContent = currentBookingData.nik;
+            document.getElementById('receiptCustPhone').textContent = currentBookingData.phone;
+            document.getElementById('receiptCustAddress').textContent = currentBookingData.address;
+            document.getElementById('receiptCurrency').textContent = `${currentBookingData.currencyCode} - ${currentBookingData.currencyName}`;
+            document.getElementById('receiptForeignAmount').textContent = `${currentBookingData.foreignAmount.toLocaleString('id-ID')} ${currentBookingData.currencyCode}`;
+            document.getElementById('receiptDenomination').textContent = currentBookingData.denomination;
+            document.getElementById('receiptLockedRate').textContent = `1 ${currentBookingData.currencyCode} = Rp ${currentBookingData.rate.toLocaleString('id-ID')}`;
+            document.getElementById('receiptTotalRupiah').textContent = `Rp ${currentBookingData.totalRupiah.toLocaleString('id-ID')}`;
+
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            if (id === 'paymentModal' && countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            alert('Nomor Rekening berhasil disalin: ' + text);
+        }
+    </script>
+</body>
+</html>
